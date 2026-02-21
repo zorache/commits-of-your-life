@@ -32,7 +32,8 @@ Inferring actions and your states from the
     - automatic git generation and date rewrite 
     - visualization: use an available git branch visualizer 
     - develop some prompt around how the journaling should be processed
-
+- second version: 
+    - support a folder of text files. build RAG embedding of the text. 
 
 
 

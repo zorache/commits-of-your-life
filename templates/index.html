@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commits of Your Life</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Times New Roman", Times, serif;
+            background: #f8f8f8;
+            color: #333;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 60px 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 80px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.8em;
+            margin-bottom: 20px;
+            font-weight: normal;
+            letter-spacing: -0.02em;
+            color: #000;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            color: #666;
+            font-style: italic;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: start;
+        }
+
+        .input-section {
+            position: sticky;
+            top: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 40px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 12px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #999;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 0;
+            border: none;
+            border-bottom: 1px solid #ddd;
+            font-size: 1em;
+            font-family: inherit;
+            background: transparent;
+            transition: border-color 0.3s ease;
+            resize: none;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-bottom-color: #000;
+        }
+
+        input {
+            height: 40px;
+        }
+
+        textarea {
+            height: 300px;
+            padding-top: 10px;
+        }
+
+        .submit-btn {
+            background: #000;
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .submit-btn:hover {
+            background: #333;
+        }
+
+        .submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: left;
+            padding: 40px 0;
+            color: #666;
+            font-style: italic;
+        }
+
+        .results {
+            display: none;
+        }
+
+        .output-section {
+            min-height: 400px;
+        }
+
+        .section-title {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            font-weight: normal;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #999;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .commit-log {
+            background: #fff;
+            border: 1px solid #eee;
+            padding: 30px;
+            font-family: "Courier New", monospace;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .commit {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px dotted #ddd;
+        }
+
+        .commit:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .commit-hash {
+            color: #999;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .commit-message {
+            color: #000;
+            margin: 8px 0;
+            font-weight: bold;
+        }
+
+        .commit-date {
+            color: #666;
+            font-size: 12px;
+            font-style: italic;
+        }
+
+        .error {
+            background: #fff;
+            color: #d32f2f;
+            padding: 20px;
+            border: 1px solid #ffcdd2;
+            margin-bottom: 30px;
+            display: none;
+            font-style: italic;
+        }
+
+        .placeholder {
+            text-align: center;
+            padding: 80px 20px;
+            color: #bbb;
+            font-style: italic;
+        }
+
+        .placeholder h3 {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            font-weight: normal;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 40px 20px;
+            }
+
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 60px;
+            }
+
+            .input-section {
+                position: static;
+            }
+
+            .header h1 {
+                font-size: 2.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Commits of Your Life</h1>
+            <p>Transform your life story into a version-controlled timeline</p>
+        </div>
+
+        <div class="main-content">
+            <div class="input-section">
+                <form id="journalForm">
+                    <div class="form-group">
+                        <label for="userName">Your Name</label>
+                        <input type="text" id="userName" name="userName" placeholder="Enter your name" value="Life Author">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="journalText">Your Life Story</label>
+                        <textarea id="journalText" name="journalText"
+                            placeholder="Archive your becoming...
+
+January 2023 — the startup felt like stepping into a different version of myself
+
+March — the city changed, I changed with it. New faces, new possibilities.
+
+Summer — the ocean taught me about falling and getting back up
+
+Now — considering school again, wondering who I'll be next"
+                            required></textarea>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="submitBtn">
+                        Transform My Life Story
+                    </button>
+                </form>
+
+                <div class="loading" id="loading">
+                    <p>🤖 Processing your life story...</p>
+                    <p>Creating your personal git repository...</p>
+                </div>
+            </div>
+
+            <div class="output-section">
+                <div class="error" id="errorMsg"></div>
+
+                <div class="results" id="results">
+                    <h2 class="section-title">Your Life Repository</h2>
+                    <div class="commit-log" id="commitLog"></div>
+                    <div style="margin-top: 30px; text-align: center;">
+                        <a id="downloadLink" href="#" class="submit-btn" style="display: inline-block; text-decoration: none;">
+                            Download Repository
+                        </a>
+                    </div>
+                </div>
+
+                <div id="placeholder" class="placeholder">
+                    <h3>Your timeline will materialize here</h3>
+                    <p>Words become commits, memories become branches</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('journalForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const userName = document.getElementById('userName').value;
+            const journalText = document.getElementById('journalText').value;
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const errorMsg = document.getElementById('errorMsg');
+            const placeholder = document.getElementById('placeholder');
+
+            // Reset UI
+            errorMsg.style.display = 'none';
+            results.style.display = 'none';
+            placeholder.style.display = 'none';
+            loading.style.display = 'block';
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+
+            try {
+                const response = await fetch('/api/process', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_name: userName,
+                        journal_text: journalText
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Display results
+                    displayResults(data);
+
+                    // Set up download link
+                    const downloadLink = document.getElementById('downloadLink');
+                    downloadLink.href = data.download_url;
+                    downloadLink.style.display = 'inline-block';
+
+                    results.style.display = 'block';
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                errorMsg.textContent = 'Error: ' + error.message;
+                errorMsg.style.display = 'block';
+                placeholder.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Transform My Life Story';
+            }
+        });
+
+        function displayResults(data) {
+            const commitLog = document.getElementById('commitLog');
+
+            let html = '';
+            data.commits.forEach(commit => {
+                const date = new Date(commit.date).toLocaleDateString();
+                html += `
+                    <div class="commit">
+                        <div class="commit-hash">commit ${commit.hash}</div>
+                        <div class="commit-message">${commit.message}</div>
+                        <div class="commit-date">${date} by ${commit.author}</div>
+                    </div>
+                `;
+            });
+
+            commitLog.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
