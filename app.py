@@ -6,6 +6,7 @@ Processes journal entries and converts them to git repositories
 
 import os
 import json
+import hashlib
 import tempfile
 import shutil
 from datetime import datetime, timezone
@@ -28,6 +29,37 @@ app = Flask(__name__)
 client = anthropic.Anthropic(
     api_key=os.getenv('ANTHROPIC_API_KEY')
 )
+
+# ---------------------------------------------------------------------------
+# Response caching — avoid re-running ~50s agent pipeline on repeated inputs
+# ---------------------------------------------------------------------------
+
+CACHE_DIR = Path("generated_repos/.cache")
+
+def _cache_key(journal_text: str, user_name: str) -> str:
+    raw = f"{user_name}::{journal_text}"
+    return hashlib.sha256(raw.encode()).hexdigest()[:16]
+
+def _load_cache(key: str):
+    """Return cached response dict if cache hit and repo+zip still exist."""
+    cache_file = CACHE_DIR / f"{key}.json"
+    if not cache_file.exists():
+        return None
+    try:
+        data = json.loads(cache_file.read_text())
+        repo_path = Path(data.get("repo_path", ""))
+        repo_name = data.get("repo_name", "")
+        zip_path = Path("generated_repos") / f"{repo_name}.zip"
+        if repo_path.exists() and zip_path.exists():
+            return data
+    except Exception:
+        pass
+    return None
+
+def _save_cache(key: str, data: dict):
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    (CACHE_DIR / f"{key}.json").write_text(json.dumps(data))
+
 
 def parse_journal_with_ai(journal_text):
     """Use Claude to parse journal text into structured life events with dates"""
@@ -261,6 +293,12 @@ def process_journal():
         if not journal_text.strip():
             return jsonify({'error': 'Journal text is required'}), 400
 
+        # Check cache first
+        ckey = _cache_key(journal_text, user_name)
+        cached = _load_cache(ckey)
+        if cached:
+            return jsonify(cached)
+
         # Parse journal with multi-agent system
         events, branch_structure = parse_journal_with_agents(client, journal_text)
 
@@ -289,7 +327,7 @@ def process_journal():
         zip_path = create_repo_zip(repo_path)
         repo_name = Path(repo_path).name
 
-        return jsonify({
+        result = {
             'success': True,
             'events': events,
             'branches': branch_structure,
@@ -298,7 +336,10 @@ def process_journal():
             'repo_path': repo_path,
             'repo_name': repo_name,
             'download_url': f'/api/download/{repo_name}'
-        })
+        }
+
+        _save_cache(ckey, result)
+        return jsonify(result)
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -331,6 +372,203 @@ def download_repo(repo_name):
             download_name=f"{repo_name}.zip",
             mimetype='application/zip'
         )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ---------------------------------------------------------------------------
+# Commit embedding + semantic search
+# ---------------------------------------------------------------------------
+
+_commits_collection = None
+
+def _get_commits_collection():
+    global _commits_collection
+    if _commits_collection is None:
+        import chromadb
+        from discover import _get_embed_fn
+        db_path = os.getenv("CHROMA_DB_PATH", "./chroma_db")
+        chroma_client = chromadb.PersistentClient(path=db_path)
+        _commits_collection = chroma_client.get_or_create_collection(
+            name="life_commits", embedding_function=_get_embed_fn()
+        )
+    return _commits_collection
+
+@app.route('/api/embed-commits', methods=['POST'])
+def embed_commits():
+    """Embed commit events into ChromaDB for semantic search."""
+    try:
+        data = request.get_json()
+        repo_name = data.get('repo_name', '')
+        events = data.get('events', [])
+
+        if not repo_name or not events:
+            return jsonify({'error': 'repo_name and events required'}), 400
+
+        collection = _get_commits_collection()
+
+        ids = []
+        docs = []
+        metas = []
+        for i, event in enumerate(events):
+            msg = event.get('commit_message', '')
+            desc = event.get('description', '')
+            ids.append(f"{repo_name}::{i}")
+            docs.append(f"{msg} — {desc}")
+            metas.append({
+                'repo_name': repo_name,
+                'date': event.get('date', ''),
+                'commit_message': msg,
+                'keyword': event.get('keyword', ''),
+            })
+
+        collection.upsert(ids=ids, documents=docs, metadatas=metas)
+        return jsonify({'success': True, 'count': len(ids)})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/search-commits', methods=['POST'])
+def search_commits():
+    """Semantic search over embedded commits."""
+    try:
+        data = request.get_json()
+        query = data.get('query', '')
+        repo_name = data.get('repo_name', '')
+
+        if not query.strip() or not repo_name:
+            return jsonify({'error': 'query and repo_name required'}), 400
+
+        collection = _get_commits_collection()
+        results = collection.query(
+            query_texts=[query],
+            n_results=10,
+            where={"repo_name": repo_name},
+        )
+
+        matches = []
+        for i in range(len(results['ids'][0])):
+            meta = results['metadatas'][0][i]
+            matches.append({
+                'commit_message': meta.get('commit_message', ''),
+                'date': meta.get('date', ''),
+                'keyword': meta.get('keyword', ''),
+                'distance': results['distances'][0][i] if results.get('distances') else None,
+            })
+
+        return jsonify({'matches': matches})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+HAIKU_MODEL = "claude-haiku-4-5-20251001"
+
+def _filter_with_haiku(candidates, query, commit_date):
+    """Use Haiku to filter candidates for relevance, time-period fit, and non-fiction."""
+    numbered = "\n".join(
+        f"[{i}] ({c['date']}) {c['file']}: {c['text'][:300]}"
+        for i, c in enumerate(candidates)
+    )
+    prompt = f"""You are filtering personal notes for relevance to a life event.
+
+Life event: "{query}"
+Event date: {commit_date}
+
+Here are candidate note fragments:
+
+{numbered}
+
+For each fragment, decide: is it (a) real personal writing (not fiction, not a quote from a book/article), (b) plausibly from the same time period as the event, and (c) meaningfully related to the life event — not just surface keyword overlap?
+
+Return ONLY a JSON array of the indices that pass all three checks. Example: [0, 2, 5]
+If none pass, return [].
+"""
+    try:
+        response = client.messages.create(
+            model=HAIKU_MODEL,
+            max_tokens=200,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = response.content[0].text.strip()
+        # Extract first JSON array from response
+        import re
+        m = re.search(r'\[[\d,\s]*\]', text)
+        if m:
+            keep = json.loads(m.group())
+            filtered = [candidates[i] for i in keep if isinstance(i, int) and 0 <= i < len(candidates)]
+            return filtered if filtered else candidates[:4]
+        return candidates[:4]
+    except Exception as e:
+        print(f"Haiku filter error: {e}")
+        return candidates[:8]
+
+
+@app.route('/api/search-vault', methods=['POST'])
+def search_vault():
+    """Search the real notes vault, constrained by date proximity to the commit."""
+    try:
+        data = request.get_json()
+        query = data.get('query', '')
+        commit_date = data.get('date', '')  # YYYY-MM-DD from the commit
+
+        if not query.strip():
+            return jsonify({'error': 'query required'}), 400
+
+        from discover import _get_collection
+        collection = _get_collection()
+
+        # Fetch a wide pool, then filter by date + Haiku
+        results = collection.query(query_texts=[query], n_results=40)
+
+        commit_year = None
+        if commit_date and len(commit_date) >= 4:
+            try:
+                commit_year = int(commit_date[:4])
+            except ValueError:
+                pass
+
+        candidates = []
+        for i in range(len(results['ids'][0])):
+            meta = results['metadatas'][0][i]
+            text = results['documents'][0][i]
+            note_date = meta.get('date', '')
+            distance = results['distances'][0][i] if results.get('distances') else 999
+
+            # Compute date proximity score
+            year_diff = None
+            if commit_year and note_date and len(note_date) >= 4:
+                try:
+                    year_diff = abs(int(note_date[:4]) - commit_year)
+                except ValueError:
+                    pass
+
+            # Check if content mentions the commit year
+            content_mentions_year = commit_year and str(commit_year) in text
+
+            # Keep if: date within ±2 years, or content mentions year, or no date info
+            if year_diff is not None and year_diff > 2 and not content_mentions_year:
+                continue
+
+            candidates.append({
+                'text': text,
+                'file': meta.get('file_name', ''),
+                'date': note_date,
+                'distance': distance,
+                'year_diff': year_diff if year_diff is not None else 999,
+            })
+
+        # Sort: prefer date-close results, break ties by semantic distance
+        candidates.sort(key=lambda c: (c['year_diff'], c['distance']))
+        top = candidates[:20]  # send up to 20 to Haiku for filtering
+
+        # --- LLM filter: Haiku judges relevance ---
+        if top:
+            top = _filter_with_haiku(top, query, commit_date)
+
+        notes = [{k: v for k, v in c.items() if k != 'year_diff'}
+                 for c in top[:8]]
+
+        return jsonify({'notes': notes})
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

@@ -453,3 +453,32 @@ Discovery makes it a *mirror* — your past writing reflects back at you, recont
 This is closer to the README's vision: "AI could help us understand ourselves better. To have the autonomy over our own evolution, and to tell our own stories."
 
 The discovery system doesn't tell your story for you. It helps you find it.
+
+---
+
+## Implementation Log
+
+### 2026-02-21 — Ingestion Run (eidos vault)
+
+**What happened:**
+- Ran `python discover.py ingest` against the eidos vault in iCloud (`~/Library/Mobile Documents/com~apple~CloudDocs/Documents/eidos`)
+- Vault size: 9,645 .md/.txt files, 114MB
+- Embedding model: `nomic-ai/nomic-embed-text-v1.5` via sentence-transformers on MPS (Apple Silicon GPU)
+- ChromaDB reached **16,400 chunks** before the system froze
+
+**Why it froze:**
+- MPS memory pressure from batch-encoding thousands of chunks with a ~270MB transformer model
+- iCloud files likely downloading on-demand during traversal, compounding I/O + GPU memory strain
+- No progress logging — couldn't tell where it was or how much memory it was using
+
+**Current state:**
+- `./chroma_db/` exists with 16,400 chunks (36MB sqlite). Ingestion may be complete or near-complete.
+- Pipeline code (`discover.py`) is functional: `NomicEmbeddingFunction`, `VaultIngester`, `VaultProber` all implemented
+- Web routes and `templates/discover.html` exist but untested with real data
+
+**Next steps to resume safely:**
+1. Verify ingestion completeness — compare chunk count against expected file count
+2. Add progress logging to `VaultIngester.ingest()` (print every N files)
+3. Consider switching from MPS to CPU for stability, or use API-based embeddings (OpenAI `text-embedding-3-small`)
+4. Add a batch size limit / sleep to avoid memory saturation
+5. Test a probe query against the existing 16,400 chunks to see if the data is usable
