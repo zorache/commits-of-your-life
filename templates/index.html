@@ -477,6 +477,27 @@
         }
         .download-btn:hover { border-color: #222; color: #222; }
 
+        .branch-legend {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            padding: 4px 32px 6px;
+        }
+        .branch-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-family: "Courier New", monospace;
+            font-size: 10px;
+            color: #999;
+        }
+        .branch-legend-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+        }
+
         @media (max-width: 640px) {
             .container { padding: 0 24px; }
             h1 { font-size: 1.4em; }
@@ -522,6 +543,7 @@
                     <span class="related-loading">searching...</span>
                 </div>
             </div>
+            <div class="branch-legend" id="branchLegend"></div>
             <div class="viz-footer">
                 <div class="viz-footer-row">
                     <input id="commitSearch" disabled placeholder="loading search...">
@@ -884,6 +906,14 @@
                             repoBtn.style.opacity = '1';
                             repoBtn.style.pointerEvents = 'auto';
                         }, 1200);
+                        // Build branch legend
+                        const legend = document.getElementById('branchLegend');
+                        const branches = data.graph.branches || [];
+                        legend.innerHTML = branches.map((name, idx) => {
+                            const color = BRANCH_COLORS[idx % BRANCH_COLORS.length];
+                            return `<span class="branch-legend-item"><span class="branch-legend-dot" style="background:${color}"></span>${name}</span>`;
+                        }).join('');
+
                         // Embed commits in background + attach click handlers
                         embedCommitsInBackground();
                         attachCommitClickHandlers();
