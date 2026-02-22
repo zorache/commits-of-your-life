@@ -386,6 +386,31 @@
             margin-left: 12px;
         }
 
+        #reflectBtn {
+            background: none;
+            border: 1px solid #ddd;
+            padding: 4px 14px;
+            font-family: "Courier New", monospace;
+            font-size: 10px;
+            color: #999;
+            cursor: pointer;
+            letter-spacing: 0.03em;
+            transition: border-color 0.2s, color 0.2s;
+            white-space: nowrap;
+        }
+        #reflectBtn:hover { border-color: #222; color: #222; }
+        #reflectBtn:disabled { color: #ccc; border-color: #eee; cursor: not-allowed; }
+        #reflectQuestion {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 0.9em;
+            font-style: italic;
+            color: #777;
+            line-height: 1.5;
+            opacity: 0;
+            transition: opacity 0.6s ease-out;
+        }
+        #reflectQuestion.visible { opacity: 1; }
+
         /* Related notes panel that drops down from clicked commit */
         .related-panel {
             position: absolute;
@@ -557,6 +582,10 @@
                 <div class="viz-footer-row" id="probeRow">
                     <input id="probeInput" placeholder="ask a question across time... (e.g. what was I afraid of?)">
                     <span class="probe-hint">enter to set</span>
+                </div>
+                <div class="viz-footer-row" id="reflectRow">
+                    <span id="reflectQuestion"></span>
+                    <button id="reflectBtn">ask me something</button>
                 </div>
             </div>
         </div>
@@ -1065,6 +1094,34 @@
                 relatedPanel.style.display = 'none';
                 activeCommitDot = null;
             }
+        });
+
+        document.getElementById('reflectBtn').addEventListener('click', () => {
+            if (!responseData) return;
+            const btn = document.getElementById('reflectBtn');
+            const el = document.getElementById('reflectQuestion');
+            btn.disabled = true;
+            btn.textContent = 'thinking...';
+            el.classList.remove('visible');
+
+            fetch('/api/reflect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ events: responseData.events }),
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.question) {
+                    el.textContent = data.question;
+                    el.classList.add('visible');
+                }
+                btn.disabled = false;
+                btn.textContent = 'ask me something';
+            })
+            .catch(() => {
+                btn.disabled = false;
+                btn.textContent = 'ask me something';
+            });
         });
 
         function attachCommitClickHandlers() {

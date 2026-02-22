@@ -462,6 +462,46 @@ def search_commits():
 
 HAIKU_MODEL = "claude-haiku-4-5-20251001"
 
+
+@app.route('/api/reflect', methods=['POST'])
+def reflect():
+    """Generate a reflective question based on the user's life events."""
+    try:
+        data = request.get_json()
+        events = data.get('events', [])
+
+        if not events:
+            return jsonify({'error': 'No events provided'}), 400
+
+        timeline = "\n".join(
+            f"- {e.get('date', '?')}: {e.get('commit_message', '')} — {e.get('description', '')}"
+            for e in events
+        )
+
+        prompt = f"""Here is a timeline of someone's life events:
+
+{timeline}
+
+Ask ONE short, curious question about this person's life. Reference specific events from their timeline. Keep it simple — one sentence, like something you'd actually ask someone over coffee.
+
+Bad: "What was it like to navigate the tension between your creative aspirations and professional obligations during that transitional period?" (too much)
+Good: "Did you know you were going to leave when you started painting again?"
+Good: "What was in Berlin?"
+Good: "Were you looking for something in 2019 or running from something?"
+
+Return ONLY the question, nothing else."""
+
+        response = client.messages.create(
+            model=HAIKU_MODEL,
+            max_tokens=150,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        question = response.content[0].text.strip()
+        return jsonify({'question': question})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 def _filter_with_haiku(candidates, query, commit_date):
     """Use Haiku to filter candidates for relevance, time-period fit, and non-fiction."""
     numbered = "\n".join(
