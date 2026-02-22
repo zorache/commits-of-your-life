@@ -502,13 +502,25 @@ If none pass, return [].
         return candidates[:8]
 
 
+def _days_between(date_a, date_b):
+    """Absolute day difference between two YYYY-MM-DD strings. Returns None on parse failure."""
+    try:
+        from datetime import date
+        da = date.fromisoformat(date_a[:10])
+        db = date.fromisoformat(date_b[:10])
+        return abs((da - db).days)
+    except Exception:
+        return None
+
+
 @app.route('/api/search-vault', methods=['POST'])
 def search_vault():
-    """Search the real notes vault, constrained by date proximity to the commit."""
+    """Search the real notes vault: date-first (±1mo), then semantic ranking, optional Haiku."""
     try:
         data = request.get_json()
         query = data.get('query', '')
-        commit_date = data.get('date', '')  # YYYY-MM-DD from the commit
+        commit_date = data.get('date', '')       # YYYY-MM-DD
+        use_haiku = data.get('use_haiku', False)  # toggle from frontend
 
         if not query.strip():
             return jsonify({'error': 'query required'}), 400
@@ -516,57 +528,57 @@ def search_vault():
         from discover import _get_collection
         collection = _get_collection()
 
-        # Fetch a wide pool, then filter by date + Haiku
-        results = collection.query(query_texts=[query], n_results=40)
+        # Fetch a large semantic pool
+        results = collection.query(query_texts=[query], n_results=200)
 
-        commit_year = None
-        if commit_date and len(commit_date) >= 4:
-            try:
-                commit_year = int(commit_date[:4])
-            except ValueError:
-                pass
+        # Bucket by date proximity: ±1 month, then ±3 months fallback
+        bucket_tight = []   # within ±30 days
+        bucket_wide = []    # within ±90 days
+        bucket_rest = []    # everything else
 
-        candidates = []
         for i in range(len(results['ids'][0])):
             meta = results['metadatas'][0][i]
             text = results['documents'][0][i]
             note_date = meta.get('date', '')
             distance = results['distances'][0][i] if results.get('distances') else 999
 
-            # Compute date proximity score
-            year_diff = None
-            if commit_year and note_date and len(note_date) >= 4:
-                try:
-                    year_diff = abs(int(note_date[:4]) - commit_year)
-                except ValueError:
-                    pass
-
-            # Check if content mentions the commit year
-            content_mentions_year = commit_year and str(commit_year) in text
-
-            # Keep if: date within ±2 years, or content mentions year, or no date info
-            if year_diff is not None and year_diff > 2 and not content_mentions_year:
-                continue
-
-            candidates.append({
+            entry = {
                 'text': text,
                 'file': meta.get('file_name', ''),
                 'date': note_date,
                 'distance': distance,
-                'year_diff': year_diff if year_diff is not None else 999,
-            })
+            }
 
-        # Sort: prefer date-close results, break ties by semantic distance
-        candidates.sort(key=lambda c: (c['year_diff'], c['distance']))
-        top = candidates[:20]  # send up to 20 to Haiku for filtering
+            if commit_date and note_date:
+                gap = _days_between(commit_date, note_date)
+                if gap is not None:
+                    if gap <= 30:
+                        bucket_tight.append(entry)
+                    elif gap <= 90:
+                        bucket_wide.append(entry)
+                    else:
+                        bucket_rest.append(entry)
+                    continue
 
-        # --- LLM filter: Haiku judges relevance ---
-        if top:
+            bucket_rest.append(entry)
+
+        # Sort each bucket by semantic distance (lower = more related)
+        for b in (bucket_tight, bucket_wide, bucket_rest):
+            b.sort(key=lambda c: c['distance'])
+
+        # Prefer tight window; widen only to ±90 days — never use undated noise
+        if len(bucket_tight) >= 3:
+            candidates = bucket_tight
+        else:
+            candidates = bucket_tight + bucket_wide
+
+        top = candidates[:20]
+
+        # Optional Haiku filter
+        if use_haiku and top:
             top = _filter_with_haiku(top, query, commit_date)
 
-        notes = [{k: v for k, v in c.items() if k != 'year_diff'}
-                 for c in top[:8]]
-
+        notes = top[:8]
         return jsonify({'notes': notes})
 
     except Exception as e:

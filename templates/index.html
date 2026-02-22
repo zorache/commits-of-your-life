@@ -69,7 +69,7 @@
         }
         @keyframes title-to-footer {
             0%   { opacity: 1; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.8em; }
-            100% { opacity: 1; top: calc(100vh - 22px); left: 50%; transform: translate(-50%, -50%); font-size: 0.95em; }
+            100% { opacity: 1; top: calc(100vh - 38px); left: 50%; transform: translate(-50%, -50%); font-size: 0.95em; }
         }
 
         .cursor {
@@ -301,9 +301,8 @@
 
         .viz-footer {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 32px;
+            flex-direction: column;
+            padding: 8px 32px 10px;
         }
         .viz-footer-title {
             font-family: Georgia, "Times New Roman", serif;
@@ -325,6 +324,67 @@
         #commitSearch:focus { outline: none; border-bottom-color: #222; }
         #commitSearch::placeholder { color: #ccc; font-style: italic; }
         #commitSearch:disabled { opacity: 0.4; }
+
+        .haiku-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: "Courier New", monospace;
+            font-size: 10px;
+            color: #bbb;
+            cursor: pointer;
+            user-select: none;
+        }
+        .haiku-toggle input { display: none; }
+        .haiku-toggle .toggle-track {
+            width: 28px; height: 14px;
+            background: #e0e0e0;
+            border-radius: 7px;
+            position: relative;
+            transition: background 0.2s;
+        }
+        .haiku-toggle input:checked + .toggle-track { background: #222; }
+        .haiku-toggle .toggle-track::after {
+            content: '';
+            position: absolute;
+            top: 2px; left: 2px;
+            width: 10px; height: 10px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+        .haiku-toggle input:checked + .toggle-track::after { transform: translateX(14px); }
+
+        .viz-footer-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+        .viz-footer-row + .viz-footer-row { margin-top: 6px; }
+
+        #probeInput {
+            background: none;
+            border: none;
+            border-bottom: 1px solid rgba(0,0,0,0.07);
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 0.95em;
+            font-style: italic;
+            color: #222;
+            padding: 4px 0;
+            width: 100%;
+            transition: border-color 0.3s;
+        }
+        #probeInput:focus { outline: none; border-bottom-color: #222; }
+        #probeInput::placeholder { color: #ccc; }
+        .probe-active #probeInput { color: #111; border-bottom-color: #bbb; }
+        .probe-hint {
+            font-family: "Courier New", monospace;
+            font-size: 10px;
+            color: #ccc;
+            white-space: nowrap;
+            margin-left: 12px;
+        }
 
         /* Related notes panel that drops down from clicked commit */
         .related-panel {
@@ -463,8 +523,19 @@
                 </div>
             </div>
             <div class="viz-footer">
-                <input id="commitSearch" disabled placeholder="loading search...">
-                <button class="action-btn visible" id="repoBtn" style="opacity:0; pointer-events:none;">see your repository</button>
+                <div class="viz-footer-row">
+                    <input id="commitSearch" disabled placeholder="loading search...">
+                    <label class="haiku-toggle">
+                        <input type="checkbox" id="haikuToggle">
+                        <span class="toggle-track"></span>
+                        haiku filter
+                    </label>
+                    <button class="action-btn visible" id="repoBtn" style="opacity:0; pointer-events:none;">see your repository</button>
+                </div>
+                <div class="viz-footer-row" id="probeRow">
+                    <input id="probeInput" placeholder="ask a question across time... (e.g. what was I afraid of?)">
+                    <span class="probe-hint">enter to set</span>
+                </div>
             </div>
         </div>
 
@@ -919,9 +990,36 @@
             });
         }
 
+        // --- Probe question ---
+        let activeProbe = '';  // empty = use commit message, non-empty = use probe
+
+        document.getElementById('probeInput').addEventListener('keydown', (e) => {
+            const row = document.getElementById('probeRow');
+            const hint = row.querySelector('.probe-hint');
+            if (e.key === 'Enter') {
+                const val = e.target.value.trim();
+                activeProbe = val;
+                if (val) {
+                    row.classList.add('probe-active');
+                    hint.textContent = 'esc to clear';
+                } else {
+                    row.classList.remove('probe-active');
+                    hint.textContent = 'enter to set';
+                }
+                e.target.blur();
+            } else if (e.key === 'Escape') {
+                e.target.value = '';
+                activeProbe = '';
+                row.classList.remove('probe-active');
+                hint.textContent = 'enter to set';
+                e.target.blur();
+            }
+        });
+
         // --- Click commit dot → show related notes panel ---
         const relatedPanel = document.getElementById('relatedPanel');
         const relatedBody = document.getElementById('relatedBody');
+        const relatedTitle = relatedPanel.querySelector('.related-title');
         let activeCommitDot = null;
 
         document.getElementById('relatedClose').addEventListener('click', () => {
@@ -954,7 +1052,7 @@
                     e.stopPropagation();
 
                     activeCommitDot = dot;
-                    const query = commit.message;
+                    const query = activeProbe || commit.message;
 
                     // Position panel below the dot
                     const outerRect = document.querySelector('.story-outer').getBoundingClientRect();
@@ -975,14 +1073,23 @@
                     relatedPanel.style.display = 'block';
                     relatedPanel.style.left = Math.max(8, dotScreenX - 120) + 'px';
                     relatedPanel.style.top = (dotScreenY + 20) + 'px';
+
+                    // Update panel title with probe or default
+                    const dateLabel = commit.date ? commit.date.slice(0, 10) : '';
+                    if (activeProbe) {
+                        relatedTitle.textContent = `"${activeProbe}" · ${dateLabel}`;
+                    } else {
+                        relatedTitle.textContent = `related notes · ${dateLabel}`;
+                    }
                     relatedBody.innerHTML = '<span class="related-loading">searching...</span>';
 
-                    // Search the real vault notes using commit message + date
+                    // Search the real vault notes using probe or commit message + date
                     const commitDate = commit.date ? commit.date.slice(0, 10) : '';
+                    const useHaiku = document.getElementById('haikuToggle').checked;
                     fetch('/api/search-vault', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ query, date: commitDate }),
+                        body: JSON.stringify({ query, date: commitDate, use_haiku: useHaiku }),
                     })
                     .then(r => r.json())
                     .then(data => {
