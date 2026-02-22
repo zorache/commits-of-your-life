@@ -12,362 +12,1136 @@
         }
 
         body {
-            font-family: "Times New Roman", Times, serif;
-            background: #f8f8f8;
-            color: #333;
+            font-family: Georgia, "Times New Roman", serif;
+            background: #fff;
+            color: #222;
             min-height: 100vh;
-            line-height: 1.6;
+            overflow: hidden;
         }
 
+        /* Static noise */
+        .static-bg {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 0;
+            opacity: 0.04;
+            pointer-events: none;
+        }
+
+        /* Main container */
         .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 60px 40px;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 80px;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 40px;
-        }
-
-        .header h1 {
-            font-size: 2.8em;
-            margin-bottom: 20px;
-            font-weight: normal;
-            letter-spacing: -0.02em;
-            color: #000;
-        }
-
-        .header p {
-            font-size: 1.1em;
-            color: #666;
-            font-style: italic;
-            max-width: 500px;
-            margin: 0 auto;
-        }
-
-        .main-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 80px;
-            align-items: start;
-        }
-
-        .input-section {
-            position: sticky;
-            top: 40px;
-        }
-
-        .form-group {
-            margin-bottom: 40px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 12px;
-            font-size: 0.9em;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: #999;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-
-        input, textarea {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             width: 100%;
+            max-width: 560px;
+            padding: 0 40px;
+            margin: 0 auto;
+        }
+
+        /* When showing viz, go full width */
+        .container.full {
+            max-width: 100%;
             padding: 0;
-            border: none;
-            border-bottom: 1px solid #ddd;
-            font-size: 1em;
-            font-family: inherit;
-            background: transparent;
-            transition: border-color 0.3s ease;
-            resize: none;
         }
 
-        input:focus, textarea:focus {
-            outline: none;
-            border-bottom-color: #000;
-        }
-
-        input {
-            height: 40px;
-        }
-
-        textarea {
-            height: 300px;
-            padding-top: 10px;
-        }
-
-        .submit-btn {
-            background: #000;
-            color: #fff;
-            border: none;
-            padding: 12px 24px;
-            font-size: 0.9em;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
+        /* Title — pinned to center of viewport, relocates to top-right in viz mode */
+        h1 {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.8em;
+            font-weight: normal;
+            color: #111;
+            opacity: 0;
+            animation: title-emerge 2.5s ease-out forwards;
             cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-
-        .submit-btn:hover {
-            background: #333;
-        }
-
-        .submit-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-
-        .loading {
-            display: none;
-            text-align: left;
-            padding: 40px 0;
-            color: #666;
-            font-style: italic;
-        }
-
-        .results {
-            display: none;
-        }
-
-        .output-section {
-            min-height: 400px;
-        }
-
-        .section-title {
-            font-size: 1.2em;
-            margin-bottom: 30px;
-            font-weight: normal;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: #999;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-
-        .commit-log {
-            background: #fff;
-            border: 1px solid #eee;
-            padding: 30px;
-            font-family: "Courier New", monospace;
-            font-size: 13px;
-            line-height: 1.8;
-        }
-
-        .commit {
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px dotted #ddd;
-        }
-
-        .commit:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-        }
-
-        .commit-hash {
-            color: #999;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-        }
-
-        .commit-message {
-            color: #000;
-            margin: 8px 0;
-            font-weight: bold;
-        }
-
-        .commit-date {
-            color: #666;
-            font-size: 12px;
-            font-style: italic;
-        }
-
-        .error {
-            background: #fff;
-            color: #d32f2f;
-            padding: 20px;
-            border: 1px solid #ffcdd2;
-            margin-bottom: 30px;
-            display: none;
-            font-style: italic;
-        }
-
-        .placeholder {
+            user-select: none;
             text-align: center;
-            padding: 80px 20px;
+            z-index: 2;
+        }
+        h1.to-footer {
+            animation: title-to-footer 0.9s ease-in-out forwards;
+            cursor: default;
+        }
+        @keyframes title-to-footer {
+            0%   { opacity: 1; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.8em; }
+            100% { opacity: 1; top: calc(100vh - 38px); left: 50%; transform: translate(-50%, -50%); font-size: 0.95em; }
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 1.5px;
+            height: 0.85em;
+            background: #111;
+            margin-left: 3px;
+            vertical-align: text-bottom;
+            animation: blink 1s step-end infinite;
+        }
+        h1.to-footer .cursor { display: none; }
+
+        .hint {
+            position: fixed;
+            top: calc(50% + 30px);
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: "Courier New", monospace;
+            font-size: 11px;
+            color: #ccc;
+            opacity: 0;
+            animation: hint-fade 0.8s ease-out 3s forwards;
+            transition: opacity 0.4s;
+            z-index: 2;
+        }
+        .hint.gone { opacity: 0 !important; animation: none; }
+
+        @keyframes title-emerge {
+            0% { opacity: 0; transform: translate(-50%, calc(-50% + 6px)); }
+            100% { opacity: 1; transform: translate(-50%, -50%); }
+        }
+        @keyframes hint-fade { to { opacity: 1; } }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Fields */
+        .field {
+            width: 100%;
+            opacity: 0;
+            transform: translateY(16px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+            pointer-events: none;
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .field.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+            position: relative;
+        }
+        .field label {
+            display: block;
+            font-family: "Courier New", monospace;
+            font-size: 11px;
             color: #bbb;
-            font-style: italic;
-        }
-
-        .placeholder h3 {
-            font-size: 1.2em;
+            letter-spacing: 0.05em;
             margin-bottom: 10px;
-            font-weight: normal;
+        }
+        .field input {
+            width: 60%;
+            background: none;
+            border: none;
+            border-bottom: 1px solid rgba(0,0,0,0.07);
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 1.1em;
+            color: #222;
+            padding-bottom: 8px;
+            transition: border-color 0.3s;
+        }
+        .field input:focus { outline: none; border-bottom-color: #222; }
+        .field input::placeholder { color: #ddd; }
+        .field textarea {
+            width: 100%;
+            height: 240px;
+            background: none;
+            border: none;
+            border-bottom: 1px solid rgba(0,0,0,0.07);
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 1em;
+            color: #222;
+            line-height: 1.8;
+            resize: none;
+            padding-top: 6px;
+            transition: border-color 0.3s;
+        }
+        .field textarea:focus { outline: none; border-bottom-color: #222; }
+        .field textarea::placeholder { color: #d0d0d0; font-style: italic; }
+
+        .fields-area {
+            position: fixed;
+            top: calc(50% + 40px);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 480px;
+            padding: 0 40px;
+            z-index: 2;
         }
 
-        @media (max-width: 768px) {
-            .container {
-                padding: 40px 20px;
-            }
+        /* Buttons */
+        .action-btn {
+            position: fixed;
+            top: calc(50% + 110px);
+            left: 50%;
+            transform: translateX(-50%) translateY(8px);
+            z-index: 2;
+            background: none;
+            border: 1px solid #ddd;
+            padding: 10px 24px;
+            font-family: "Courier New", monospace;
+            font-size: 12px;
+            color: #888;
+            cursor: pointer;
+            letter-spacing: 0.03em;
+            opacity: 0;
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out, border-color 0.2s, color 0.2s;
+            pointer-events: none;
+        }
+        .action-btn.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+            pointer-events: auto;
+        }
+        .action-btn:hover { border-color: #222; color: #222; }
+        .action-btn:disabled { color: #ccc; border-color: #eee; cursor: not-allowed; }
+        #repoBtn {
+            position: static;
+            transform: none;
+            opacity: 0;
+            pointer-events: none;
+            margin-left: auto;
+        }
 
-            .main-content {
-                grid-template-columns: 1fr;
-                gap: 60px;
-            }
+        .error-msg {
+            color: #c0392b;
+            font-style: italic;
+            margin-top: 16px;
+            font-size: 0.9em;
+            display: none;
+        }
 
-            .input-section {
-                position: static;
-            }
+        /* Story visualization area */
+        .viz-area {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            transition: opacity 0.8s ease-out;
+            pointer-events: none;
+        }
+        .viz-area.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .story-outer {
+            position: relative;
+            overflow: hidden;
+            background: #fff;
+            flex: 1;
+        }
+        .story-container {
+            position: relative;
+            overflow-x: auto;
+            overflow-y: hidden;
+            height: 100%;
+            padding: 0;
+            scrollbar-width: none;
+            display: flex;
+            align-items: center;
+        }
+        .story-container::-webkit-scrollbar { display: none; }
+        .story-svg-wrap {
+            transform-origin: left center;
+            will-change: transform;
+        }
+        .story-fade-left {
+            position: absolute;
+            top: 0; left: 0; bottom: 0;
+            width: 120px;
+            background: linear-gradient(to right, #fff 0%, #fff 10%, transparent 100%);
+            z-index: 5;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .story-fade-left.visible { opacity: 1; }
+        .story-scroll-hint {
+            position: absolute;
+            bottom: 14px;
+            right: 24px;
+            font-family: "Courier New", monospace;
+            font-size: 10px;
+            color: #ccc;
+            z-index: 6;
+            opacity: 0;
+            animation: hint-fade 0.8s ease-out 1.5s forwards;
+            transition: opacity 0.4s;
+            pointer-events: none;
+        }
+        .story-scroll-hint.gone { opacity: 0 !important; animation: none; }
+        .story-popover {
+            position: absolute;
+            pointer-events: none;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 3px;
+            padding: 10px 14px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 13px;
+            line-height: 1.5;
+            z-index: 10;
+            max-width: 280px;
+            display: none;
+        }
+        .story-popover .date { color: #aaa; font-family: "Courier New", monospace; font-size: 11px; }
+        .story-popover .msg { margin-top: 4px; font-style: italic; color: #444; }
+        .story-popover .branch-tag { color: #bbb; font-size: 10px; margin-top: 6px; font-family: "Courier New", monospace; }
+        .story-dot { cursor: pointer; }
+        .story-dot text { transition: opacity 0.2s; }
+        .story-dot:hover text { opacity: 0.5; }
 
-            .header h1 {
-                font-size: 2.2em;
-            }
+        .viz-footer {
+            display: flex;
+            flex-direction: column;
+            padding: 8px 32px 10px;
+        }
+        .viz-footer-title {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 1.1em;
+            font-weight: normal;
+            color: #111;
+        }
+        #commitSearch {
+            background: none;
+            border: none;
+            border-bottom: 1px solid rgba(0,0,0,0.07);
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 0.95em;
+            color: #222;
+            padding: 4px 0;
+            width: 260px;
+            transition: border-color 0.3s;
+        }
+        #commitSearch:focus { outline: none; border-bottom-color: #222; }
+        #commitSearch::placeholder { color: #ccc; font-style: italic; }
+        #commitSearch:disabled { opacity: 0.4; }
+
+        .haiku-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: "Courier New", monospace;
+            font-size: 10px;
+            color: #bbb;
+            cursor: pointer;
+            user-select: none;
+        }
+        .haiku-toggle input { display: none; }
+        .haiku-toggle .toggle-track {
+            width: 28px; height: 14px;
+            background: #e0e0e0;
+            border-radius: 7px;
+            position: relative;
+            transition: background 0.2s;
+        }
+        .haiku-toggle input:checked + .toggle-track { background: #222; }
+        .haiku-toggle .toggle-track::after {
+            content: '';
+            position: absolute;
+            top: 2px; left: 2px;
+            width: 10px; height: 10px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+        .haiku-toggle input:checked + .toggle-track::after { transform: translateX(14px); }
+
+        .viz-footer-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+        .viz-footer-row + .viz-footer-row { margin-top: 6px; }
+
+        #probeInput {
+            background: none;
+            border: none;
+            border-bottom: 1px solid rgba(0,0,0,0.07);
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 0.95em;
+            font-style: italic;
+            color: #222;
+            padding: 4px 0;
+            width: 100%;
+            transition: border-color 0.3s;
+        }
+        #probeInput:focus { outline: none; border-bottom-color: #222; }
+        #probeInput::placeholder { color: #ccc; }
+        .probe-active #probeInput { color: #111; border-bottom-color: #bbb; }
+        .probe-hint {
+            font-family: "Courier New", monospace;
+            font-size: 10px;
+            color: #ccc;
+            white-space: nowrap;
+            margin-left: 12px;
+        }
+
+        /* Related notes panel that drops down from clicked commit */
+        .related-panel {
+            position: absolute;
+            z-index: 20;
+            background: #fff;
+            border: 1px solid #e8e8e8;
+            border-radius: 3px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+            padding: 16px 20px;
+            max-width: 320px;
+            min-width: 240px;
+            font-family: Georgia, "Times New Roman", serif;
+            display: none;
+        }
+        .related-panel .related-title {
+            font-family: "Courier New", monospace;
+            font-size: 10px;
+            color: #bbb;
+            letter-spacing: 0.05em;
+            margin-bottom: 10px;
+        }
+        .related-panel .related-loading {
+            font-style: italic;
+            color: #ccc;
+            font-size: 12px;
+        }
+        .related-panel .related-note {
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .related-panel .related-note:last-child { border-bottom: none; }
+        .related-panel .related-note .note-text {
+            font-size: 13px;
+            color: #444;
+            line-height: 1.5;
+        }
+        .related-panel .related-note .note-meta {
+            font-family: "Courier New", monospace;
+            font-size: 10px;
+            color: #bbb;
+            margin-top: 4px;
+        }
+        .related-panel .related-close {
+            position: absolute;
+            top: 8px; right: 12px;
+            background: none; border: none;
+            font-size: 14px; color: #ccc;
+            cursor: pointer;
+        }
+        .related-panel .related-close:hover { color: #666; }
+
+        /* Results (commit log) */
+        .results-area {
+            width: 100%;
+            max-width: 560px;
+            margin: 0 auto;
+            padding: 12px 40px 30px;
+            opacity: 0;
+            transition: opacity 0.6s ease-out;
+            max-height: 60vh;
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+        .results-area::-webkit-scrollbar { display: none; }
+        .results-area.visible { opacity: 1; }
+        .results-title {
+            font-family: "Courier New", monospace;
+            font-size: 11px;
+            color: #bbb;
+            letter-spacing: 0.05em;
+            margin-bottom: 16px;
+        }
+        .commit-log { border-top: 1px solid #eee; }
+        .commit { padding: 14px 0; border-bottom: 1px solid #f0f0f0; }
+        .commit-hash { font-family: "Courier New", monospace; font-size: 10px; color: #ccc; }
+        .commit-message { margin: 4px 0; font-size: 0.95em; }
+        .commit-date { font-family: "Courier New", monospace; font-size: 11px; color: #aaa; }
+        .download-btn {
+            display: inline-block;
+            margin-top: 20px;
+            background: none;
+            border: 1px solid #ddd;
+            padding: 10px 20px;
+            font-family: "Courier New", monospace;
+            font-size: 12px;
+            color: #888;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .download-btn:hover { border-color: #222; color: #222; }
+
+        .branch-legend {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            padding: 4px 32px 6px;
+        }
+        .branch-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-family: "Courier New", monospace;
+            font-size: 10px;
+            color: #999;
+        }
+        .branch-legend-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+        }
+
+        @media (max-width: 640px) {
+            .container { padding: 0 24px; }
+            h1 { font-size: 1.4em; }
+            .results-area { padding: 20px 24px; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Commits of Your Life</h1>
-            <p>Transform your life story into a version-controlled timeline</p>
+
+    <div class="static-bg">
+        <canvas id="noise"></canvas>
+    </div>
+
+    <div class="container" id="mainContainer">
+        <h1 id="title">commits of your life<span class="cursor"></span></h1>
+        <div class="hint" id="hint">click to begin</div>
+
+        <div class="fields-area" id="fieldsArea" style="display:none;">
+            <div class="field" id="nameField">
+                <label>name</label>
+                <input type="text" id="userName" placeholder="" autocomplete="off">
+            </div>
+            <div class="field" id="storyField">
+                <label>your story</label>
+                <textarea id="journalText" placeholder="write your life, however it comes out..."></textarea>
+                <div class="error-msg" id="errorMsg"></div>
+            </div>
         </div>
 
-        <div class="main-content">
-            <div class="input-section">
-                <form id="journalForm">
-                    <div class="form-group">
-                        <label for="userName">Your Name</label>
-                        <input type="text" id="userName" name="userName" placeholder="Enter your name" value="Life Author">
-                    </div>
+        <button class="action-btn" id="actionBtn" style="display:none;">continue</button>
 
-                    <div class="form-group">
-                        <label for="journalText">Your Life Story</label>
-                        <textarea id="journalText" name="journalText"
-                            placeholder="Archive your becoming...
-
-January 2023 — the startup felt like stepping into a different version of myself
-
-March — the city changed, I changed with it. New faces, new possibilities.
-
-Summer — the ocean taught me about falling and getting back up
-
-Now — considering school again, wondering who I'll be next"
-                            required></textarea>
-                    </div>
-
-                    <button type="submit" class="submit-btn" id="submitBtn">
-                        Transform My Life Story
-                    </button>
-                </form>
-
-                <div class="loading" id="loading">
-                    <p>🤖 Processing your life story...</p>
-                    <p>Creating your personal git repository...</p>
+        <!-- Story visualization (shown after processing) -->
+        <div class="viz-area" id="vizArea">
+            <div class="story-outer">
+                <div class="story-fade-left" id="storyFade"></div>
+                <div class="story-scroll-hint" id="storyScrollHint">scroll to explore &rarr;</div>
+                <div class="story-container" id="storyContainer"></div>
+            </div>
+            <div class="related-panel" id="relatedPanel">
+                <button class="related-close" id="relatedClose">&times;</button>
+                <div class="related-title">related notes</div>
+                <div class="related-body" id="relatedBody">
+                    <span class="related-loading">searching...</span>
                 </div>
             </div>
-
-            <div class="output-section">
-                <div class="error" id="errorMsg"></div>
-
-                <div class="results" id="results">
-                    <h2 class="section-title">Your Life Repository</h2>
-                    <div class="commit-log" id="commitLog"></div>
-                    <div style="margin-top: 30px; text-align: center;">
-                        <a id="downloadLink" href="#" class="submit-btn" style="display: inline-block; text-decoration: none;">
-                            Download Repository
-                        </a>
-                    </div>
+            <div class="branch-legend" id="branchLegend"></div>
+            <div class="viz-footer">
+                <div class="viz-footer-row">
+                    <input id="commitSearch" disabled placeholder="loading search...">
+                    <label class="haiku-toggle">
+                        <input type="checkbox" id="haikuToggle">
+                        <span class="toggle-track"></span>
+                        haiku filter
+                    </label>
+                    <button class="action-btn visible" id="repoBtn" style="opacity:0; pointer-events:none;">see your repository</button>
                 </div>
-
-                <div id="placeholder" class="placeholder">
-                    <h3>Your timeline will materialize here</h3>
-                    <p>Words become commits, memories become branches</p>
+                <div class="viz-footer-row" id="probeRow">
+                    <input id="probeInput" placeholder="ask a question across time... (e.g. what was I afraid of?)">
+                    <span class="probe-hint">enter to set</span>
                 </div>
             </div>
+        </div>
+
+        <!-- Commit log (shown after clicking "see your repository") -->
+        <div class="results-area" id="resultsArea">
+            <div class="results-title">your life repository</div>
+            <div class="commit-log" id="commitLog"></div>
+            <a id="downloadLink" href="#" class="download-btn">download repository</a>
         </div>
     </div>
 
     <script>
-        document.getElementById('journalForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+        // --- Static noise ---
+        const canvas = document.getElementById('noise');
+        const ctx = canvas.getContext('2d');
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        function drawNoise() {
+            const w = canvas.width, h = canvas.height;
+            const img = ctx.createImageData(w, h);
+            const d = img.data;
+            for (let i = 0; i < d.length; i += 4) {
+                const v = Math.random() * 255;
+                d[i] = v; d[i+1] = v; d[i+2] = v; d[i+3] = 255;
+            }
+            ctx.putImageData(img, 0, 0);
+            requestAnimationFrame(drawNoise);
+        }
+        drawNoise();
 
-            const userName = document.getElementById('userName').value;
+        // --- Branch colors ---
+        const BRANCH_COLORS = [
+            '#2d2d2d', '#e63946', '#457b9d', '#2a9d8f',
+            '#e9c46a', '#f4a261', '#264653', '#9b5de5',
+        ];
+
+        // --- State machine ---
+        let step = 0;
+        const title = document.getElementById('title');
+        const hint = document.getElementById('hint');
+        const nameField = document.getElementById('nameField');
+        const storyField = document.getElementById('storyField');
+        const actionBtn = document.getElementById('actionBtn');
+        const fieldsArea = document.getElementById('fieldsArea');
+        const vizArea = document.getElementById('vizArea');
+        const resultsArea = document.getElementById('resultsArea');
+        const mainContainer = document.getElementById('mainContainer');
+
+        function advance() {
+            if (step === 0) {
+                step = 1;
+                title.style.cursor = 'default';
+                hint.classList.add('gone');
+                fieldsArea.style.display = '';
+                actionBtn.style.display = '';
+                setTimeout(() => {
+                    nameField.classList.add('visible');
+                    actionBtn.classList.add('visible');
+                    actionBtn.textContent = 'continue';
+                    document.getElementById('userName').focus();
+                }, 200);
+            } else if (step === 1) {
+                step = 2;
+                nameField.classList.remove('visible');
+                actionBtn.classList.remove('visible');
+                setTimeout(() => {
+                    storyField.classList.add('visible');
+                    actionBtn.style.top = 'calc(50% + 330px)';
+                    actionBtn.classList.add('visible');
+                    actionBtn.textContent = 'look back';
+                    document.getElementById('journalText').focus();
+                }, 300);
+            } else if (step === 2) {
+                submitStory();
+            }
+        }
+
+        title.addEventListener('click', () => { if (step === 0) advance(); });
+        actionBtn.addEventListener('click', () => advance());
+        document.getElementById('userName').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); advance(); }
+        });
+
+        // --- Story renderer ---
+        function renderStory(container, graph) {
+            const fadeLeft = document.getElementById('storyFade');
+            const commits = graph.commits;
+            const branches = graph.branches;
+
+            const COL_W = 56;
+            const OFFSET_Y = 44;
+            const PADDING_X = 60;
+            const PADDING_TOP = 70;
+            const R = 3.5;
+
+            const branchOffset = {};
+            branchOffset['main'] = 0;
+            let slot = 1;
+            for (const b of branches) {
+                if (b === 'main') continue;
+                const direction = (slot % 2 === 1) ? -1 : 1;
+                const level = Math.ceil(slot / 2);
+                branchOffset[b] = direction * level * OFFSET_Y;
+                slot++;
+            }
+
+            const maxAbove = Math.min(...Object.values(branchOffset));
+            const maxBelow = Math.max(...Object.values(branchOffset));
+            const centerY = PADDING_TOP + Math.abs(maxAbove);
+            const width = commits.length * COL_W + PADDING_X * 2 + 80;
+            const height = centerY + maxBelow + PADDING_TOP + 50;
+
+            const svgWrap = document.createElement('div');
+            svgWrap.className = 'story-svg-wrap';
+
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', width);
+            svg.setAttribute('height', height);
+            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+            svg.style.fontFamily = 'Georgia, "Times New Roman", serif';
+            svg.style.display = 'block';
+
+            // Main spine
+            const mainLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            mainLine.setAttribute('x1', PADDING_X);
+            mainLine.setAttribute('y1', centerY);
+            mainLine.setAttribute('x2', commits.length * COL_W + PADDING_X);
+            mainLine.setAttribute('y2', centerY);
+            mainLine.setAttribute('stroke', '#ddd');
+            mainLine.setAttribute('stroke-width', '0.5');
+            svg.appendChild(mainLine);
+
+            // Position commits
+            const hashToPos = {};
+            commits.forEach((c, i) => {
+                hashToPos[c.hash] = {
+                    x: PADDING_X + i * COL_W,
+                    y: centerY + (branchOffset[c.branch] || 0)
+                };
+            });
+
+            // Branch lines
+            const branchSegments = {};
+            commits.forEach((c) => {
+                if (!branchSegments[c.branch]) branchSegments[c.branch] = [];
+                branchSegments[c.branch].push(hashToPos[c.hash]);
+            });
+            for (const [bname, points] of Object.entries(branchSegments)) {
+                if (points.length < 2) continue;
+                const bIdx = branches.indexOf(bname);
+                const color = BRANCH_COLORS[bIdx % BRANCH_COLORS.length];
+                for (let j = 1; j < points.length; j++) {
+                    const p0 = points[j-1], p1 = points[j];
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', p0.x); line.setAttribute('y1', p0.y);
+                    line.setAttribute('x2', p1.x); line.setAttribute('y2', p1.y);
+                    line.setAttribute('stroke', color);
+                    line.setAttribute('stroke-width', '0.8');
+                    line.setAttribute('stroke-opacity', bname === 'main' ? '0.35' : '0.2');
+                    svg.appendChild(line);
+                }
+            }
+
+            // Fork/merge curves
+            commits.forEach((c) => {
+                const pos = hashToPos[c.hash];
+                c.parents.forEach(ph => {
+                    const pp = hashToPos[ph];
+                    if (!pp || pp.y === pos.y) return;
+                    const bIdx = branches.indexOf(c.branch);
+                    const color = BRANCH_COLORS[bIdx % BRANCH_COLORS.length];
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    const dx = Math.abs(pos.x - pp.x) * 0.4;
+                    path.setAttribute('d', `M${pp.x},${pp.y} C${pp.x+dx},${pp.y} ${pos.x-dx},${pos.y} ${pos.x},${pos.y}`);
+                    path.setAttribute('stroke', color);
+                    path.setAttribute('stroke-width', '0.8');
+                    path.setAttribute('fill', 'none');
+                    path.setAttribute('stroke-opacity', '0.2');
+                    svg.appendChild(path);
+                });
+            });
+
+            // Year markers
+            let lastYear = null;
+            commits.forEach((c) => {
+                const year = c.date.slice(0, 4);
+                if (year !== lastYear) {
+                    lastYear = year;
+                    const x = hashToPos[c.hash].x;
+                    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    label.setAttribute('x', x);
+                    label.setAttribute('y', centerY + 28);
+                    label.setAttribute('fill', '#ccc');
+                    label.setAttribute('font-size', '8');
+                    label.setAttribute('text-anchor', 'middle');
+                    label.setAttribute('font-family', '"Courier New", monospace');
+                    label.textContent = year;
+                    svg.appendChild(label);
+                }
+            });
+
+            // Popover
+            const popover = document.createElement('div');
+            popover.className = 'story-popover';
+            container.parentElement.appendChild(popover);
+
+            // Dots + keywords
+            commits.forEach((c) => {
+                const x = hashToPos[c.hash].x;
+                const y = hashToPos[c.hash].y;
+                const bIdx = branches.indexOf(c.branch);
+                const color = BRANCH_COLORS[bIdx % BRANCH_COLORS.length];
+
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.classList.add('story-dot');
+                g.style.opacity = '0';
+
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', x); circle.setAttribute('cy', y);
+                circle.setAttribute('r', c.is_merge ? R + 1.5 : R);
+                circle.setAttribute('fill', c.is_merge ? '#fff' : color);
+                circle.setAttribute('stroke', color);
+                circle.setAttribute('stroke-width', c.is_merge ? '1.5' : '0.8');
+                g.appendChild(circle);
+
+                const above = (branchOffset[c.branch] || 0) < 0;
+                const keyword = c.keyword || '?';
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                const labelY = above ? y - R - 7 : y + R + 13;
+                text.setAttribute('x', x); text.setAttribute('y', labelY);
+                text.setAttribute('fill', '#555');
+                text.setAttribute('font-size', '9');
+                text.setAttribute('font-style', 'italic');
+                text.setAttribute('text-anchor', 'start');
+                text.setAttribute('transform', `rotate(-35, ${x}, ${labelY})`);
+                text.textContent = keyword;
+                g.appendChild(text);
+
+                const hitArea = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                hitArea.setAttribute('cx', x); hitArea.setAttribute('cy', y);
+                hitArea.setAttribute('r', 16);
+                hitArea.setAttribute('fill', 'transparent');
+                g.appendChild(hitArea);
+
+                g.addEventListener('mouseenter', () => {
+                    const dateStr = c.date.slice(0, 10);
+                    popover.innerHTML = `<div class="date">${dateStr}</div><div class="msg">${c.message}</div><div class="branch-tag">${c.branch}</div>`;
+                    popover.style.display = 'block';
+                    const outerRect = container.parentElement.getBoundingClientRect();
+                    const svgRect = svg.getBoundingClientRect();
+                    const scaleX = svgRect.width / width;
+                    const scaleY = svgRect.height / height;
+                    const dotScreenX = svgRect.left + x * scaleX - outerRect.left;
+                    const dotScreenY = svgRect.top + y * scaleY - outerRect.top;
+                    popover.style.left = Math.max(0, dotScreenX - 60) + 'px';
+                    popover.style.top = (dotScreenY - popover.offsetHeight - 14) + 'px';
+                });
+                g.addEventListener('mouseleave', () => { popover.style.display = 'none'; });
+
+                svg.appendChild(g);
+            });
+
+            svgWrap.appendChild(svg);
+            container.appendChild(svgWrap);
+
+            // Scroll-driven dot reveal
+            function updateOnScroll() {
+                const scrollX = container.scrollLeft;
+                const containerW = container.clientWidth;
+
+                if (scrollX > 50) fadeLeft.classList.add('visible');
+                else fadeLeft.classList.remove('visible');
+
+                const scrollHint = document.getElementById('storyScrollHint');
+                if (scrollX > 30 && scrollHint) scrollHint.classList.add('gone');
+
+                const dots = svg.querySelectorAll('.story-dot');
+                dots.forEach((dot, i) => {
+                    const commit = commits[i];
+                    const dotSvgX = hashToPos[commit.hash].x;
+                    const dotScreenX = dotSvgX - scrollX;
+                    if (dotScreenX < containerW - 20 && dot.style.opacity === '0') {
+                        const delay = Math.max(0, (dotScreenX / containerW) * 0.25);
+                        dot.style.transition = `opacity 0.6s ease-out ${delay}s`;
+                        dot.style.opacity = '1';
+                    }
+                });
+            }
+
+            container.addEventListener('scroll', updateOnScroll);
+            requestAnimationFrame(updateOnScroll);
+        }
+
+        // --- Submit ---
+        let responseData = null;
+
+        async function submitStory() {
+            const userName = document.getElementById('userName').value || 'Life Author';
             const journalText = document.getElementById('journalText').value;
-            const submitBtn = document.getElementById('submitBtn');
-            const loading = document.getElementById('loading');
-            const results = document.getElementById('results');
             const errorMsg = document.getElementById('errorMsg');
-            const placeholder = document.getElementById('placeholder');
 
-            // Reset UI
+            if (!journalText.trim()) return;
+
             errorMsg.style.display = 'none';
-            results.style.display = 'none';
-            placeholder.style.display = 'none';
-            loading.style.display = 'block';
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Processing...';
+            actionBtn.disabled = true;
+            actionBtn.textContent = 'looking back...';
 
             try {
                 const response = await fetch('/api/process', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        user_name: userName,
-                        journal_text: journalText
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_name: userName, journal_text: journalText })
                 });
-
                 const data = await response.json();
 
                 if (data.success) {
-                    // Display results
-                    displayResults(data);
+                    responseData = data;
+                    step = 3;
 
-                    // Set up download link
-                    const downloadLink = document.getElementById('downloadLink');
-                    downloadLink.href = data.download_url;
-                    downloadLink.style.display = 'inline-block';
+                    // Move title to footer center
+                    title.classList.add('to-footer');
+                    storyField.classList.remove('visible');
+                    actionBtn.classList.remove('visible');
+                    actionBtn.style.display = 'none';
+                    fieldsArea.style.display = 'none';
 
-                    results.style.display = 'block';
+                    // Go full width for visualization
+                    document.body.style.overflow = 'hidden';
+                    mainContainer.classList.add('full');
+
+                    // Render story visualization
+                    console.log('Graph data:', data.graph);
+                    console.log('Commits:', data.graph?.commits?.length);
+                    renderStory(document.getElementById('storyContainer'), data.graph);
+
+                    // Show viz area
+                    setTimeout(() => {
+                        vizArea.classList.add('visible');
+                        // Show "see your repository" button after a beat
+                        setTimeout(() => {
+                            const repoBtn = document.getElementById('repoBtn');
+                            repoBtn.style.opacity = '1';
+                            repoBtn.style.pointerEvents = 'auto';
+                        }, 1200);
+                        // Build branch legend
+                        const legend = document.getElementById('branchLegend');
+                        const branches = data.graph.branches || [];
+                        legend.innerHTML = branches.map((name, idx) => {
+                            const color = BRANCH_COLORS[idx % BRANCH_COLORS.length];
+                            return `<span class="branch-legend-item"><span class="branch-legend-dot" style="background:${color}"></span>${name}</span>`;
+                        }).join('');
+
+                        // Embed commits in background + attach click handlers
+                        embedCommitsInBackground();
+                        attachCommitClickHandlers();
+                    }, 300);
                 } else {
-                    throw new Error(data.error || 'Unknown error');
+                    throw new Error(data.error || 'Something went wrong');
                 }
-
             } catch (error) {
-                console.error('Error:', error);
-                errorMsg.textContent = 'Error: ' + error.message;
+                errorMsg.textContent = error.message;
                 errorMsg.style.display = 'block';
-                placeholder.style.display = 'block';
-            } finally {
-                loading.style.display = 'none';
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Transform My Life Story';
+                actionBtn.disabled = false;
+                actionBtn.textContent = 'look back';
+            }
+        }
+
+        // "See your repository" button
+        document.getElementById('repoBtn').addEventListener('click', () => {
+            if (!responseData) return;
+
+            const commitLog = document.getElementById('commitLog');
+            let html = '';
+            responseData.commits.forEach(commit => {
+                const date = commit.date.slice(0, 10);
+                html += `<div class="commit">
+                    <div class="commit-hash">${commit.hash}</div>
+                    <div class="commit-message">${commit.message}</div>
+                    <div class="commit-date">${date}</div>
+                </div>`;
+            });
+            commitLog.innerHTML = html;
+            document.getElementById('downloadLink').href = responseData.download_url;
+
+            document.body.style.overflow = 'auto';
+            resultsArea.classList.add('visible');
+            resultsArea.scrollIntoView({ behavior: 'smooth' });
+        });
+
+        // --- Commit embedding + semantic search ---
+        let searchReady = false;
+
+        function embedCommitsInBackground() {
+            if (!responseData) return;
+            fetch('/api/embed-commits', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    repo_name: responseData.repo_name,
+                    events: responseData.events,
+                }),
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    searchReady = true;
+                    const input = document.getElementById('commitSearch');
+                    input.disabled = false;
+                    input.placeholder = 'search your commits...';
+                }
+            })
+            .catch(err => console.warn('embed-commits failed:', err));
+        }
+
+        // Search on Enter
+        document.getElementById('commitSearch').addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter' || !searchReady || !responseData) return;
+            const query = e.target.value.trim();
+            if (!query) {
+                resetDotOpacity();
+                return;
+            }
+            fetch('/api/search-commits', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query, repo_name: responseData.repo_name }),
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.matches) highlightCommits(data.matches);
+            })
+            .catch(err => console.warn('search-commits failed:', err));
+        });
+
+        function highlightCommits(matches) {
+            const matchedMessages = new Set(matches.map(m => m.commit_message));
+            const svg = document.querySelector('#storyContainer svg');
+            if (!svg || !responseData) return;
+
+            const dots = svg.querySelectorAll('.story-dot');
+            const commits = responseData.graph.commits;
+            dots.forEach((dot, i) => {
+                if (i < commits.length && matchedMessages.has(commits[i].message)) {
+                    dot.style.opacity = '1';
+                } else {
+                    dot.style.opacity = '0.12';
+                }
+            });
+        }
+
+        function resetDotOpacity() {
+            const svg = document.querySelector('#storyContainer svg');
+            if (!svg) return;
+            svg.querySelectorAll('.story-dot').forEach(dot => {
+                dot.style.opacity = '1';
+            });
+        }
+
+        // --- Probe question ---
+        let activeProbe = '';  // empty = use commit message, non-empty = use probe
+
+        document.getElementById('probeInput').addEventListener('keydown', (e) => {
+            const row = document.getElementById('probeRow');
+            const hint = row.querySelector('.probe-hint');
+            if (e.key === 'Enter') {
+                const val = e.target.value.trim();
+                activeProbe = val;
+                if (val) {
+                    row.classList.add('probe-active');
+                    hint.textContent = 'esc to clear';
+                } else {
+                    row.classList.remove('probe-active');
+                    hint.textContent = 'enter to set';
+                }
+                e.target.blur();
+            } else if (e.key === 'Escape') {
+                e.target.value = '';
+                activeProbe = '';
+                row.classList.remove('probe-active');
+                hint.textContent = 'enter to set';
+                e.target.blur();
             }
         });
 
-        function displayResults(data) {
-            const commitLog = document.getElementById('commitLog');
+        // --- Click commit dot → show related notes panel ---
+        const relatedPanel = document.getElementById('relatedPanel');
+        const relatedBody = document.getElementById('relatedBody');
+        const relatedTitle = relatedPanel.querySelector('.related-title');
+        let activeCommitDot = null;
 
-            let html = '';
-            data.commits.forEach(commit => {
-                const date = new Date(commit.date).toLocaleDateString();
-                html += `
-                    <div class="commit">
-                        <div class="commit-hash">commit ${commit.hash}</div>
-                        <div class="commit-message">${commit.message}</div>
-                        <div class="commit-date">${date} by ${commit.author}</div>
-                    </div>
-                `;
+        document.getElementById('relatedClose').addEventListener('click', () => {
+            relatedPanel.style.display = 'none';
+            activeCommitDot = null;
+        });
+
+        // Close panel when clicking outside
+        document.addEventListener('click', (e) => {
+            if (relatedPanel.style.display === 'block' &&
+                !relatedPanel.contains(e.target) &&
+                e.target !== activeCommitDot) {
+                relatedPanel.style.display = 'none';
+                activeCommitDot = null;
+            }
+        });
+
+        function attachCommitClickHandlers() {
+            const svg = document.querySelector('#storyContainer svg');
+            if (!svg || !responseData) return;
+
+            const dots = svg.querySelectorAll('.story-dot');
+            const commits = responseData.graph.commits;
+
+            dots.forEach((dot, i) => {
+                if (i >= commits.length) return;
+                const commit = commits[i];
+
+                dot.addEventListener('click', (e) => {
+                    e.stopPropagation();
+
+                    activeCommitDot = dot;
+                    const query = activeProbe || commit.message;
+
+                    // Position panel below the dot
+                    const outerRect = document.querySelector('.story-outer').getBoundingClientRect();
+                    const svgEl = svg;
+                    const svgRect = svgEl.getBoundingClientRect();
+                    const svgW = parseFloat(svgEl.getAttribute('width'));
+                    const svgH = parseFloat(svgEl.getAttribute('height'));
+                    const scaleX = svgRect.width / svgW;
+                    const scaleY = svgRect.height / svgH;
+
+                    const circle = dot.querySelector('circle');
+                    const cx = parseFloat(circle.getAttribute('cx'));
+                    const cy = parseFloat(circle.getAttribute('cy'));
+
+                    const dotScreenX = svgRect.left + cx * scaleX - outerRect.left;
+                    const dotScreenY = svgRect.top + cy * scaleY - outerRect.top;
+
+                    relatedPanel.style.display = 'block';
+                    relatedPanel.style.left = Math.max(8, dotScreenX - 120) + 'px';
+                    relatedPanel.style.top = (dotScreenY + 20) + 'px';
+
+                    // Update panel title with probe or default
+                    const dateLabel = commit.date ? commit.date.slice(0, 10) : '';
+                    if (activeProbe) {
+                        relatedTitle.textContent = `"${activeProbe}" · ${dateLabel}`;
+                    } else {
+                        relatedTitle.textContent = `related notes · ${dateLabel}`;
+                    }
+                    relatedBody.innerHTML = '<span class="related-loading">searching...</span>';
+
+                    // Search the real vault notes using probe or commit message + date
+                    const commitDate = commit.date ? commit.date.slice(0, 10) : '';
+                    const useHaiku = document.getElementById('haikuToggle').checked;
+                    fetch('/api/search-vault', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query, date: commitDate, use_haiku: useHaiku }),
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (!data.notes || data.notes.length === 0) {
+                            relatedBody.innerHTML = '<span class="related-loading">no related notes found</span>';
+                            return;
+                        }
+                        let html = '';
+                        data.notes.forEach(n => {
+                            const snippet = n.text.length > 200 ? n.text.slice(0, 200) + '...' : n.text;
+                            html += `<div class="related-note">
+                                <div class="note-text">${snippet}</div>
+                                <div class="note-meta">${n.file}${n.date ? ' · ' + n.date : ''}</div>
+                            </div>`;
+                        });
+                        relatedBody.innerHTML = html;
+                    })
+                    .catch(() => {
+                        relatedBody.innerHTML = '<span class="related-loading">search failed</span>';
+                    });
+                });
             });
-
-            commitLog.innerHTML = html;
         }
     </script>
 </body>

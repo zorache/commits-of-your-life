@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discover — Commits of Your Life</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Times New Roman", Times, serif;
+            background: #f8f8f8;
+            color: #333;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 60px 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.8em;
+            margin-bottom: 20px;
+            font-weight: normal;
+            letter-spacing: -0.02em;
+            color: #000;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            color: #666;
+            font-style: italic;
+            max-width: 560px;
+            margin: 0 auto;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #999;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 60px;
+            align-items: start;
+        }
+
+        /* --- Left column: probe input --- */
+        .probe-section {
+            position: sticky;
+            top: 40px;
+        }
+
+        .probe-input {
+            width: 100%;
+            padding: 14px 0;
+            border: none;
+            border-bottom: 1px solid #ddd;
+            font-size: 1.05em;
+            font-family: inherit;
+            background: transparent;
+            resize: none;
+            height: 120px;
+            transition: border-color 0.3s;
+        }
+
+        .probe-input:focus {
+            outline: none;
+            border-bottom-color: #000;
+        }
+
+        .btn {
+            background: #000;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .btn:hover { background: #333; }
+        .btn:disabled { background: #ccc; cursor: not-allowed; }
+
+        .btn-outline {
+            background: transparent;
+            color: #000;
+            border: 1px solid #000;
+        }
+
+        .btn-outline:hover {
+            background: #000;
+            color: #fff;
+        }
+
+        .btn-small {
+            padding: 6px 14px;
+            font-size: 0.7em;
+        }
+
+        .btn-danger {
+            color: #999;
+            border-color: #ddd;
+        }
+
+        .btn-danger:hover {
+            background: #d32f2f;
+            border-color: #d32f2f;
+            color: #fff;
+        }
+
+        .probe-actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        /* --- Accumulated events (left column, below probe) --- */
+        .accumulated {
+            margin-top: 50px;
+            display: none;
+        }
+
+        .accumulated-count {
+            font-size: 0.8em;
+            color: #999;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 16px;
+        }
+
+        .acc-event {
+            padding: 10px 0;
+            border-bottom: 1px dotted #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .acc-event-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .acc-event-date {
+            font-family: "Courier New", monospace;
+            font-size: 11px;
+            color: #999;
+        }
+
+        .acc-event-msg {
+            font-size: 0.95em;
+            color: #000;
+        }
+
+        .acc-event .remove-btn {
+            background: none;
+            border: none;
+            color: #ccc;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0 4px;
+            flex-shrink: 0;
+        }
+
+        .acc-event .remove-btn:hover {
+            color: #d32f2f;
+        }
+
+        .generate-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+
+        .name-input {
+            width: 100%;
+            padding: 0;
+            border: none;
+            border-bottom: 1px solid #ddd;
+            font-size: 1em;
+            font-family: inherit;
+            background: transparent;
+            height: 36px;
+            margin-bottom: 20px;
+            transition: border-color 0.3s;
+        }
+
+        .name-input:focus {
+            outline: none;
+            border-bottom-color: #000;
+        }
+
+        /* --- Right column: results --- */
+        .results-section {
+            min-height: 300px;
+        }
+
+        .placeholder {
+            text-align: center;
+            padding: 100px 20px;
+            color: #bbb;
+            font-style: italic;
+        }
+
+        .placeholder h3 {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            font-weight: normal;
+        }
+
+        .loading {
+            display: none;
+            padding: 60px 20px;
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ddd;
+            border-top-color: #000;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fff;
+            color: #d32f2f;
+            padding: 16px;
+            border: 1px solid #ffcdd2;
+            margin-bottom: 20px;
+            display: none;
+            font-style: italic;
+            font-size: 0.9em;
+        }
+
+        /* --- Echoes --- */
+        .echoes-section {
+            display: none;
+            margin-bottom: 40px;
+        }
+
+        .echo {
+            padding: 16px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .echo:last-child {
+            border-bottom: none;
+        }
+
+        .echo-source {
+            font-family: "Courier New", monospace;
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 6px;
+        }
+
+        .echo-text {
+            font-size: 0.95em;
+            color: #444;
+            line-height: 1.5;
+        }
+
+        /* --- Candidate events --- */
+        .candidates-section {
+            display: none;
+            margin-bottom: 30px;
+        }
+
+        .candidate {
+            padding: 14px 0;
+            border-bottom: 1px dotted #ddd;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .candidate:last-child {
+            border-bottom: none;
+        }
+
+        .candidate input[type="checkbox"] {
+            margin-top: 4px;
+            flex-shrink: 0;
+            accent-color: #000;
+        }
+
+        .candidate-info {
+            flex: 1;
+        }
+
+        .candidate-msg {
+            font-size: 1em;
+            color: #000;
+            font-weight: bold;
+        }
+
+        .candidate-date {
+            font-family: "Courier New", monospace;
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .candidate-desc {
+            font-size: 0.9em;
+            color: #555;
+            margin-top: 6px;
+        }
+
+        .candidates-actions {
+            margin-top: 16px;
+            display: flex;
+            gap: 10px;
+        }
+
+        /* --- Final repo output --- */
+        .repo-output {
+            display: none;
+        }
+
+        .commit-log {
+            background: #fff;
+            border: 1px solid #eee;
+            padding: 24px;
+            font-family: "Courier New", monospace;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .commit {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px dotted #ddd;
+        }
+
+        .commit:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .commit-hash {
+            color: #999;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .commit-message {
+            color: #000;
+            margin: 6px 0;
+            font-weight: bold;
+        }
+
+        .commit-date {
+            color: #666;
+            font-size: 12px;
+            font-style: italic;
+        }
+
+        .section-label {
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #999;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            margin-bottom: 20px;
+        }
+
+        .collapsed .echo { display: none; }
+        .collapsed .echo:nth-child(-n+3) { display: block; }
+
+        .toggle-echoes {
+            background: none;
+            border: none;
+            color: #999;
+            font-family: inherit;
+            font-style: italic;
+            font-size: 0.85em;
+            cursor: pointer;
+            padding: 10px 0;
+        }
+
+        .toggle-echoes:hover { color: #000; }
+
+        @media (max-width: 768px) {
+            .container { padding: 40px 20px; }
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+            .probe-section { position: static; }
+            .header h1 { font-size: 2.2em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Discover</h1>
+            <p>Probe your notes. Resurface what you lived. Let it become a repository.</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Left column -->
+            <div class="probe-section">
+                <div>
+                    <label for="probeInput">Probe</label>
+                    <textarea class="probe-input" id="probeInput"
+                        placeholder="what did I believe about love?&#10;&#10;what changed me in 2023?&#10;&#10;when did I feel most lost?"></textarea>
+                </div>
+                <div class="probe-actions">
+                    <button class="btn" id="probeBtn" onclick="sendProbe()">Send</button>
+                </div>
+
+                <!-- Accumulated events -->
+                <div class="accumulated" id="accumulated">
+                    <div class="accumulated-count" id="accCount">0 events collected</div>
+                    <div id="accList"></div>
+                    <div class="generate-section">
+                        <label for="userName">Name for commits</label>
+                        <input class="name-input" type="text" id="userName" placeholder="Your name" value="Life Author">
+                        <button class="btn" onclick="generateRepo()">Generate Repository</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right column -->
+            <div class="results-section">
+                <div class="error" id="errorMsg"></div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Searching your notes...</p>
+                </div>
+
+                <div class="loading" id="genLoading" style="display:none;">
+                    <div class="spinner"></div>
+                    <p>Building your repository...</p>
+                </div>
+
+                <!-- Echoes -->
+                <div class="echoes-section" id="echoesSection">
+                    <div class="section-label">Echoes from your vault</div>
+                    <div id="echoesList" class="collapsed"></div>
+                    <button class="toggle-echoes" id="toggleEchoes" onclick="toggleEchoes()">show all</button>
+                </div>
+
+                <!-- Candidate events -->
+                <div class="candidates-section" id="candidatesSection">
+                    <div class="section-label">Events found</div>
+                    <div id="candidatesList"></div>
+                    <div class="candidates-actions">
+                        <button class="btn" onclick="addSelected()">Add Selected</button>
+                        <button class="btn btn-outline btn-small" onclick="toggleAll()">Toggle All</button>
+                    </div>
+                </div>
+
+                <!-- Repo output -->
+                <div class="repo-output" id="repoOutput">
+                    <div class="section-label">Your Life Repository</div>
+                    <div class="commit-log" id="commitLog"></div>
+                    <div style="margin-top: 24px; text-align: center;">
+                        <a id="downloadLink" href="#" class="btn" style="display:inline-block;text-decoration:none;">
+                            Download Repository
+                        </a>
+                    </div>
+                </div>
+
+                <div id="placeholder" class="placeholder">
+                    <h3>Enter a probe to begin</h3>
+                    <p>Your notes will resonate back</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let accumulatedEvents = [];
+        let currentCandidates = [];
+
+        async function sendProbe() {
+            const query = document.getElementById('probeInput').value.trim();
+            if (!query) return;
+
+            const btn = document.getElementById('probeBtn');
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('errorMsg');
+            const placeholder = document.getElementById('placeholder');
+
+            error.style.display = 'none';
+            placeholder.style.display = 'none';
+            document.getElementById('echoesSection').style.display = 'none';
+            document.getElementById('candidatesSection').style.display = 'none';
+            document.getElementById('repoOutput').style.display = 'none';
+            loading.style.display = 'block';
+            btn.disabled = true;
+            btn.textContent = 'Searching...';
+
+            try {
+                const res = await fetch('/api/probe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+
+                renderEchoes(data.echoes || []);
+                renderCandidates(data.events || []);
+            } catch (e) {
+                error.textContent = e.message;
+                error.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+                btn.disabled = false;
+                btn.textContent = 'Send';
+            }
+        }
+
+        function renderEchoes(echoes) {
+            const el = document.getElementById('echoesList');
+            const section = document.getElementById('echoesSection');
+            if (!echoes.length) { section.style.display = 'none'; return; }
+
+            el.innerHTML = echoes.map(e => `
+                <div class="echo">
+                    <div class="echo-source">${esc(e.file)}${e.date ? ' &middot; ' + esc(e.date) : ''}</div>
+                    <div class="echo-text">${esc(e.text)}</div>
+                </div>
+            `).join('');
+            el.classList.add('collapsed');
+            document.getElementById('toggleEchoes').textContent = `show all ${echoes.length}`;
+            section.style.display = 'block';
+        }
+
+        function toggleEchoes() {
+            const el = document.getElementById('echoesList');
+            const btn = document.getElementById('toggleEchoes');
+            const isCollapsed = el.classList.toggle('collapsed');
+            btn.textContent = isCollapsed ? `show all ${el.children.length}` : 'show less';
+        }
+
+        function renderCandidates(events) {
+            currentCandidates = events;
+            const el = document.getElementById('candidatesList');
+            const section = document.getElementById('candidatesSection');
+            if (!events.length) { section.style.display = 'none'; return; }
+
+            el.innerHTML = events.map((ev, i) => `
+                <div class="candidate">
+                    <input type="checkbox" checked id="cand_${i}">
+                    <div class="candidate-info">
+                        <div class="candidate-msg">${esc(ev.commit_message)}</div>
+                        <div class="candidate-date">${esc(ev.date)}</div>
+                        <div class="candidate-desc">${esc(ev.description)}</div>
+                    </div>
+                </div>
+            `).join('');
+            section.style.display = 'block';
+        }
+
+        function toggleAll() {
+            const boxes = document.querySelectorAll('#candidatesList input[type="checkbox"]');
+            const allChecked = [...boxes].every(b => b.checked);
+            boxes.forEach(b => b.checked = !allChecked);
+        }
+
+        function addSelected() {
+            const boxes = document.querySelectorAll('#candidatesList input[type="checkbox"]');
+            boxes.forEach((box, i) => {
+                if (box.checked && currentCandidates[i]) {
+                    // dedupe by commit_message + date
+                    const ev = currentCandidates[i];
+                    const dup = accumulatedEvents.some(
+                        a => a.commit_message === ev.commit_message && a.date === ev.date
+                    );
+                    if (!dup) accumulatedEvents.push({ ...ev });
+                }
+            });
+            renderAccumulated();
+            // clear candidates
+            document.getElementById('candidatesSection').style.display = 'none';
+            currentCandidates = [];
+        }
+
+        function renderAccumulated() {
+            const section = document.getElementById('accumulated');
+            const list = document.getElementById('accList');
+            const count = document.getElementById('accCount');
+
+            if (!accumulatedEvents.length) {
+                section.style.display = 'none';
+                return;
+            }
+
+            // sort by date for display
+            const sorted = [...accumulatedEvents].sort((a, b) => a.date.localeCompare(b.date));
+            accumulatedEvents = sorted;
+
+            count.textContent = `${sorted.length} event${sorted.length === 1 ? '' : 's'} collected`;
+            list.innerHTML = sorted.map((ev, i) => `
+                <div class="acc-event">
+                    <div class="acc-event-info">
+                        <div class="acc-event-date">${esc(ev.date)}</div>
+                        <div class="acc-event-msg">${esc(ev.commit_message)}</div>
+                    </div>
+                    <button class="remove-btn" onclick="removeEvent(${i})">&times;</button>
+                </div>
+            `).join('');
+            section.style.display = 'block';
+        }
+
+        function removeEvent(idx) {
+            accumulatedEvents.splice(idx, 1);
+            renderAccumulated();
+        }
+
+        async function generateRepo() {
+            if (!accumulatedEvents.length) return;
+
+            const userName = document.getElementById('userName').value || 'Life Author';
+            const genLoading = document.getElementById('genLoading');
+            const error = document.getElementById('errorMsg');
+
+            error.style.display = 'none';
+            document.getElementById('echoesSection').style.display = 'none';
+            document.getElementById('candidatesSection').style.display = 'none';
+            document.getElementById('repoOutput').style.display = 'none';
+            document.getElementById('placeholder').style.display = 'none';
+            genLoading.style.display = 'block';
+
+            try {
+                const res = await fetch('/api/discover-generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ events: accumulatedEvents, user_name: userName })
+                });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+
+                renderRepo(data);
+            } catch (e) {
+                error.textContent = e.message;
+                error.style.display = 'block';
+            } finally {
+                genLoading.style.display = 'none';
+            }
+        }
+
+        function renderRepo(data) {
+            const log = document.getElementById('commitLog');
+            log.innerHTML = data.commits.map(c => `
+                <div class="commit">
+                    <div class="commit-hash">commit ${esc(c.hash)}</div>
+                    <div class="commit-message">${esc(c.message)}</div>
+                    <div class="commit-date">${c.date.slice(0, 10)} by ${esc(c.author)}</div>
+                </div>
+            `).join('');
+
+            document.getElementById('downloadLink').href = data.download_url;
+            document.getElementById('repoOutput').style.display = 'block';
+        }
+
+        function esc(s) {
+            if (!s) return '';
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        // Enter key sends probe
+        document.getElementById('probeInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendProbe();
+            }
+        });
+    </script>
+</body>
+</html>
