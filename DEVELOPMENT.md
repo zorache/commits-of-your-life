@@ -197,4 +197,130 @@ python app.py
 5. **Error states matter** - AI can fail, plan for it
 
 ---
+
+# MVP Development Log
+
+## Commit `af007c3` - Multi-Agent System Implementation
+
+### **What We Built:**
+
+#### **Multi-Agent Architecture (`agents.py`)**
+- **5 Specialized Agents** for journal parsing reliability:
+  1. **Event Extractor** - Identifies significant life moments
+  2. **Date Resolver** - Handles temporal reasoning and date inference
+  3. **Commit Generator** - Creates git-style commit messages
+  4. **Branch Classifier** - Identifies major life changes for branching
+  5. **Validator** - Quality control and consistency checking
+
+- **Benefits over single prompt:**
+  - Higher accuracy through task specialization
+  - Better error handling and fallbacks
+  - Modular debugging and improvement
+  - More extensible architecture
+
+#### **Frontend Redesign**
+- **Are.na-inspired aesthetic** - minimal, editorial typography
+- **Times New Roman + system fonts** for artistic feel
+- **Poetic UX copy** - "Archive your becoming..."
+- **Clean spacing** and dotted dividers
+- **Sticky input** section for better UX
+
+#### **Infrastructure Improvements**
+- **Persistent storage** - `generated_repos/` instead of temp files
+- **ZIP download** - Users get real git repositories
+- **Unique naming** - Timestamped repo names for multiple users
+- **Error handling** - Graceful degradation when agents fail
+
+### **Current Status:**
+✅ **Working MVP** - All core features functional
+✅ **Server running** - http://127.0.0.1:5000
+✅ **Git history** - Proper version control
+✅ **Documentation** - Comprehensive technical notes
+
+### **Testing Priorities:**
+1. **Multi-agent reliability** - Test with diverse journal styles
+2. **Date inference accuracy** - Verify temporal reasoning works
+3. **Git repository quality** - Check commit messages and branching
+4. **Download functionality** - Ensure ZIP files contain valid repos
+5. **Error handling** - Test graceful failures
+
+### **Known Technical Debt:**
+- **Async/await** - Current implementation uses sync wrapper for Flask
+- **API error handling** - Limited retry logic for Anthropic API
+- **Storage cleanup** - No automatic deletion of old repositories
+
+### **Next Technical Iterations:**
+- **DSPy integration** - Automatic prompt optimization framework
+- **Background job processing** - Queue system for longer processing
+- **Validation metrics** - Automated quality assessment
+- **Agent communication** - Inter-agent feedback and refinement
+
+---
+
+## Pipeline Performance & Timing
+
+### **Agent Pipeline (as of 2026-02-21)**
+
+```
+Step 1 (sequential):  Event extraction         ~12-13s
+Step 2 (parallel):    Date resolution    ─┐
+                      Commit generation   ├─  ~29-37s (3 API calls in parallel)
+                      Branch classification─┘
+Step 3 (local):       Validation               ~0s
+                      Git repo + zip            ~1-2s
+─────────────────────────────────────────────────
+Total end-to-end:                              ~50-55s
+```
+
+### **Parallelization History:**
+- **v1**: All 5 agents sequential → ~70s+
+- **v2**: Dates + commits in parallel, branch classification sequential → ~51s
+- **v3 (current)**: Dates + commits + branch classification all parallel → ~50s
+
+### **Bottleneck Analysis:**
+- Event extraction must run first (other agents depend on its output)
+- The parallel step is bounded by the slowest API call (usually date resolution at ~29s due to higher max_tokens=5000)
+- Validation is local-only (no API call), essentially free
+- Git repo creation + zip packaging is ~1-2s
+
+### **Bugs Fixed During Testing:**
+1. **Markdown stripping** - Claude responses sometimes wrapped in ```json blocks; replaced fragile string slicing with regex
+2. **Git add paths** - `repo.index.add()` needed repo-relative paths, not absolute
+3. **Timezone-aware dates** - GitPython requires timezone-aware datetimes; added UTC fallback
+4. **Duplicate branch names** - Added counter-based deduplication for semantic branch names
+
+---
+
+## Next Steps
+
+### **Time Optimization**
+- **Use a faster model for simpler agents** — Date resolution and commit generation don't need Opus; switching to Haiku or Sonnet could cut the parallel step from ~30s to ~5-10s
+- **Batch API calls** — Combine date resolution + commit generation into a single prompt that returns both, reducing from 3 parallel calls to 2
+- **Stream event extraction** — Start processing events as they're extracted rather than waiting for the full list
+- **Cache prompts** — Use prompt caching for the system-level instructions that don't change between requests
+
+### **Branch Classification Quality**
+- The classifier often returns no branches — prompt needs tuning to be more aggressive about flagging major life changes
+- Consider a threshold-based approach instead of binary classification
+
+### **Frontend & UX**
+- Add a progress indicator showing which agent is currently running
+- Show estimated time remaining based on journal length
+- Add example journal entries users can click to try
+- Mobile layout improvements
+
+### **Robustness**
+- Add retry logic for failed API calls (currently fails silently with fallbacks)
+- Better error messages surfaced to the user when parsing fails
+- Rate limiting for the API endpoint
+- Automatic cleanup of old generated repos
+
+### **Features**
+- Support multiple export formats (.tar, bare repo)
+- Let users edit/refine extracted events before generating the repo
+- Add git tags for decade markers or life phases
+- Background job processing with polling for longer journals
+- CLI version for developer users
+
+---
 *Built for hackathon demo - version-controlled life storytelling*

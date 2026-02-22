@@ -17,3 +17,7 @@ Thumbs.db
 # Generated git repos
 output/
 generated_repos/
+
+# Discovery pipeline data
+test_vault/
+chroma_db/
