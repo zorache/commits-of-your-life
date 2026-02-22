@@ -2,6 +2,8 @@
 
 Your life as a git repository. Journal about your past, and watch it become commits, branches, and merges — a version-controlled life where nothing is deleted, only committed to.
 
+![Commits of Your Life — visualization with branches, probe question, and related notes](screenshot.png)
+
 Two modes:
 - **Journal mode** — write about your life, AI agents extract events and generate a git repo with branches and merges
 - **Discovery mode** — point it at your notes vault (Obsidian, markdown files), embed everything, then probe your past with questions like *"what was I afraid of?"* and watch related notes surface across different time periods
